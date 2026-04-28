@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Cocktail Flashcards</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1a1714">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Flashcards">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300;9..144,400;9..144,600;9..144,800&family=JetBrains+Mono:wght@400;500&family=Shippori+Mincho:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f1ebe0;
+  --paper-2:#e7dfd0;
+  --ink:#1a1714;
+  --ink-soft:#3d362e;
+  --muted:#857a6b;
+  --line:#1a1714;
+  --accent:#c8385a;       /* sumi-pink */
+  --accent-soft:#e8b4c1;
+  --gold:#a8884a;
+  --green:#5a6b3a;
+  --shadow:0 1px 0 rgba(26,23,20,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow-x:hidden}
+body{
+  font-family:'Fraunces','Shippori Mincho',Georgia,serif;
+  color:var(--ink);
+  background:var(--paper);
+  background-image:
+    radial-gradient(1200px 600px at 10% -10%, rgba(200,56,90,.06), transparent 60%),
+    radial-gradient(900px 500px at 110% 110%, rgba(168,136,74,.08), transparent 60%);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  min-height:100dvh;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+/* paper grain */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .1 0 0 0 0 .09 0 0 0 0 .08 0 0 0 .25 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+.shell{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:18px 18px 120px}
+
+/* HEADER */
+header{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  border-bottom:1px solid var(--line);
+  padding:10px 2px 14px;margin-bottom:18px;
+}
+.brand{display:flex;flex-direction:column;gap:2px;line-height:1}
+.brand .kanji{
+  font-family:'Shippori Mincho',serif;font-weight:800;font-size:13px;letter-spacing:.4em;
+  color:var(--accent);text-transform:uppercase;
+}
+.brand h1{
+  font-family:'Fraunces',serif;font-weight:300;font-style:italic;
+  font-size:clamp(28px,7vw,38px);letter-spacing:-.02em;
+}
+.brand h1 b{font-weight:800;font-style:normal}
+.meta{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;text-align:right}
+
+/* TABS */
+.tabs{display:flex;gap:0;margin-bottom:14px;border:1px solid var(--line);background:var(--paper)}
+.tab{
+  flex:1;padding:11px 8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.22em;
+  text-transform:uppercase;background:transparent;color:var(--ink);border:none;cursor:pointer;
+  border-right:1px solid var(--line);transition:background .18s;
+}
+.tab:last-child{border-right:none}
+.tab.active{background:var(--ink);color:var(--paper)}
+.tab .count{opacity:.5;margin-left:4px;font-size:9px}
+.tab.active .count{opacity:.7}
+
+/* CATEGORY FILTER */
+.cats{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cat{
+  flex:0 0 auto;padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:10px;
+  letter-spacing:.2em;text-transform:uppercase;border:1px solid var(--line);
+  background:transparent;color:var(--ink);cursor:pointer;white-space:nowrap;
+  transition:all .18s;
+}
+.cat.active{background:var(--accent);color:var(--paper);border-color:var(--accent)}
+.cat:not(.active):hover{background:var(--ink);color:var(--paper)}
+
+/* DECK / CARD */
+.deck{position:relative;perspective:1600px;margin-bottom:14px}
+.card{
+  position:relative;width:100%;min-height:64dvh;
+  background:var(--paper);
+  border:1px solid var(--line);
+  transform-style:preserve-3d;transition:transform .7s cubic-bezier(.22,.85,.3,1);
+  cursor:pointer;
+}
+.card.flipped{transform:rotateY(180deg)}
+.face{
+  position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  padding:22px 22px 70px;display:flex;flex-direction:column;
+}
+.face.back{transform:rotateY(180deg);background:var(--ink);color:var(--paper)}
+
+/* corner ornaments */
+.corner{position:absolute;width:14px;height:14px;border:1px solid currentColor;opacity:.6}
+.corner.tl{top:8px;left:8px;border-right:none;border-bottom:none}
+.corner.tr{top:8px;right:8px;border-left:none;border-bottom:none}
+.corner.bl{bottom:8px;left:8px;border-right:none;border-top:none}
+.corner.br{bottom:8px;right:8px;border-left:none;border-top:none}
+
+/* FRONT */
+.cat-tag{
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:auto;
+  display:flex;align-items:center;gap:8px;
+}
+.cat-tag::before{content:"";width:18px;height:1px;background:var(--accent)}
+.name-block{margin:auto 0}
+.cat-name{
+  font-family:'Fraunces',serif;font-weight:300;font-style:italic;
+  font-size:clamp(34px,9vw,52px);line-height:.98;letter-spacing:-.02em;
+  margin-bottom:10px;
+}
+.cat-name b{font-weight:800;font-style:normal;display:block}
+.notes{
+  display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;
+}
+.note{
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;padding:5px 10px;border:1px solid var(--ink);
+  color:var(--ink);background:rgba(255,255,255,.3);
+}
+.front-foot{
+  position:absolute;left:22px;right:22px;bottom:18px;
+  display:flex;justify-content:space-between;align-items:flex-end;
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--muted);
+}
+.price{
+  font-family:'Fraunces',serif;font-style:italic;font-weight:300;
+  font-size:24px;color:var(--ink);letter-spacing:-.02em;
+}
+.price b{font-weight:600;font-style:normal}
+.flip-hint{display:flex;align-items:center;gap:6px}
+.flip-hint .arrow{display:inline-block;animation:bob 2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
+
+.classic-badge{
+  position:absolute;top:14px;right:14px;
+  font-family:'Shippori Mincho',serif;font-weight:800;font-size:11px;
+  letter-spacing:.4em;color:var(--gold);text-transform:uppercase;
+  writing-mode:vertical-rl;
+}
+
+/* BACK */
+.back .head{
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--accent-soft);margin-bottom:14px;
+  display:flex;justify-content:space-between;
+}
+.back .b-name{
+  font-family:'Fraunces',serif;font-weight:300;font-style:italic;font-size:22px;
+  letter-spacing:-.01em;margin-bottom:18px;line-height:1.1;color:#f1e6da;
+}
+.section{margin-bottom:16px}
+.section-label{
+  font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--accent-soft);margin-bottom:6px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-label::after{content:"";flex:1;height:1px;background:rgba(241,235,224,.18)}
+.section-body{
+  font-family:'Fraunces',serif;font-weight:400;font-size:15.5px;line-height:1.5;
+  color:#f1e6da;
+}
+.section-body.mono{font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.65;letter-spacing:.01em}
+.back .front-foot{color:rgba(241,235,224,.5)}
+.back .flip-hint .arrow{transform:scaleX(-1)}
+
+/* NAV */
+.nav{
+  display:grid;grid-template-columns:48px 1fr 48px;gap:8px;align-items:stretch;
+  margin-top:12px;
+}
+.nav button{
+  height:48px;border:1px solid var(--line);background:var(--paper);color:var(--ink);
+  font-family:'Fraunces',serif;font-size:22px;cursor:pointer;transition:all .15s;
+}
+.nav button:hover{background:var(--ink);color:var(--paper)}
+.nav button:active{transform:scale(.97)}
+.progress{
+  position:relative;height:48px;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:var(--paper);
+}
+.progress .fill{position:absolute;inset:0;background:var(--ink);width:0;transition:width .4s cubic-bezier(.22,.85,.3,1);z-index:0}
+.progress .label{
+  position:relative;z-index:1;font-family:'JetBrains Mono',monospace;font-size:11px;
+  letter-spacing:.25em;color:var(--ink);mix-blend-mode:difference;
+}
+.progress .label.over{color:var(--paper)}
+
+/* SHUFFLE / RESET */
+.tools{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:8px}
+.tools button{
+  flex:1;height:38px;border:1px dashed var(--line);background:transparent;color:var(--ink);
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.25em;
+  text-transform:uppercase;cursor:pointer;transition:all .15s;
+}
+.tools button:hover{background:var(--ink);color:var(--paper);border-style:solid}
+
+/* footer */
+footer{
+  text-align:center;margin-top:28px;
+  font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.3em;
+  color:var(--muted);text-transform:uppercase;
+}
+footer .seal{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border:1px solid var(--accent);color:var(--accent);
+  font-family:'Shippori Mincho',serif;font-weight:800;font-size:14px;
+  margin-bottom:8px;
+}
+
+/* empty state */
+.empty{text-align:center;padding:60px 20px;color:var(--muted);font-style:italic}
+
+/* keyboard focus */
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* tiny screens */
+@media (max-width:380px){
+  .shell{padding:14px 14px 100px}
+  .face{padding:18px 18px 64px}
+  .front-foot{left:18px;right:18px}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <div class="brand">
+      <span class="kanji">献立 · Kondate</span>
+      <h1>Cocktail <b>Flashcards</b></h1>
+    </div>
+    <div class="meta">
+      <div id="dateStamp"></div>
+      <div>v.01 / bar study</div>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-deck="menu" role="tab">Menu <span class="count" id="cMenu"></span></button>
+    <button class="tab" data-deck="classic" role="tab">Classics <span class="count" id="cClassic"></span></button>
+  </div>
+
+  <div class="cats" id="cats"></div>
+
+  <div class="deck">
+    <div class="card" id="card" role="button" aria-label="Flip card">
+      <div class="face front">
+        <span class="corner tl"></span><span class="corner tr"></span>
+        <span class="corner bl"></span><span class="corner br"></span>
+        <div class="cat-tag" id="frontCat">Category</div>
+        <div class="name-block">
+          <div class="cat-name" id="frontName">—</div>
+          <div class="notes" id="frontNotes"></div>
+        </div>
+        <div class="classic-badge" id="classicBadge" style="display:none">Classic</div>
+        <div class="front-foot">
+          <div class="price" id="frontPrice"></div>
+          <div class="flip-hint">tap to flip <span class="arrow">→</span></div>
+        </div>
+      </div>
+
+      <div class="face back">
+        <span class="corner tl"></span><span class="corner tr"></span>
+        <span class="corner bl"></span><span class="corner br"></span>
+        <div class="head">
+          <span id="backHeadL">Spec</span>
+          <span id="backHeadR">—</span>
+        </div>
+        <div class="b-name" id="backName">—</div>
+
+        <div class="section" id="secIng">
+          <div class="section-label">Ingredients</div>
+          <div class="section-body" id="backIng">—</div>
+        </div>
+        <div class="section">
+          <div class="section-label">Build</div>
+          <div class="section-body mono" id="backPrep">—</div>
+        </div>
+
+        <div class="front-foot">
+          <div id="backId" style="font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.2em">—</div>
+          <div class="flip-hint"><span class="arrow">←</span> flip back</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button id="prev" aria-label="Previous">‹</button>
+    <div class="progress"><div class="fill" id="fill"></div><div class="label" id="progress">01 / 12</div></div>
+    <button id="next" aria-label="Next">›</button>
+  </div>
+
+  <div class="tools">
+    <button id="shuffle">Shuffle</button>
+    <button id="reset">Reset Order</button>
+  </div>
+
+  <footer>
+    <div class="seal">桜</div>
+    <div>Study Deck · Tap card · Swipe ←/→</div>
+  </footer>
+
+</div>
+
+<script>
+const DB = {"menu_cocktails":[{"id":"hanagasum","name":"Hanagasum (Blossom Mist)","category":"Sakura","price":17.0,"isAlcoholic":true,"tastingNotes":["floral","fruity","fizzy"],"menuIngredients":"Roku Sakura Gin, Blossom Tea Liq, Sweet & Sour, Saline Solution, Fig Leaf Soda","prepInstructions":"50ml Pre Mix, Top Up Fig Leaf Soda, Long Rocks, Column Ice, Sakura Stamp."},{"id":"hana_fubuki","name":"Hana Fubuki (Flower Snowstorm)","category":"Sakura","price":14.0,"isAlcoholic":false,"tastingNotes":["floral","tangy","fizzy"],"menuIngredients":"Blossom Shrub, Orange Water, Fig Leaf Soda","prepInstructions":"25ml Premix (Red color), Top Fig Leaf Soda, Long Rocks, Column ice with Sakura stamp."},{"id":"yuzuko","name":"Yuzukō (Yuzu Light)","category":"Yuzu","price":17.0,"isAlcoholic":true,"tastingNotes":["green sugar cane","yuzu","vibrant"],"menuIngredients":"Bacardi Carta Blanco Rum, El Dorado 3 Rum, La Yuzu Liqueur, Lime Juice, Grapefruit Bitters, Yuzu Air Foam","prepInstructions":"75 ml Pre Mix, Nick & Nora Glass, Yuzu Foam, Grated Lemon."},{"id":"yuzubai","name":"Yuzubai (Roasted Yuzu)","category":"Yuzu","price":14.0,"isAlcoholic":false,"tastingNotes":["roasted","silky citrus","fizzy"],"menuIngredients":"Tanqueray 0.0 Infused Coffee Bean, Coffee Cordial, Homemade Yuzu Soda","prepInstructions":"Coffee Tanq Inf 40ml, Amazake Coffee 60ml, Yuzu water 70ml. Shake & double strain, Top soda, Tall Rocks and Column Sakura ice."},{"id":"tokaiden","name":"Tōkaiden (Spicy Electric Current)","category":"Sancho","price":18.0,"isAlcoholic":true,"tastingNotes":["grassy","citrusy","smooth"],"menuIngredients":"Tapatio Blanco Tequila Infused Kaffir Lime Leaves & Lemongrass, La Okinawa Citrus Liqueur, Sansho Leaves Cordial, Japanese Bitters","prepInstructions":"90ml premix, Small Rocks Glass, Ice Block, Sancho Leaf."},{"id":"ha_no_kaori","name":"Ha No Kaori (Fragrance of the Leaf)","category":"Sancho","price":14.0,"isAlcoholic":false,"tastingNotes":["fruity","peppery","tangy"],"menuIngredients":"Sansho Pepper Cordial, Coconut Water, Honey & Passion Fruit, Lime Juice","prepInstructions":"90ml premix, rocks glass, lime garnish."},{"id":"midori_no_michi","name":"Midori No Michi (The Green Path)","category":"Green Tea","price":18.0,"isAlcoholic":true,"tastingNotes":["herbal","earthy","evolutive"],"menuIngredients":"Haku Japanese Vodka, Green Tea Vermouth, Italicus, Absinth Drop, Matcha Ice Ball","prepInstructions":"Build, 100 premix, Coupe Glass, Matcha ice ball, Matcha leaf."},{"id":"ryokun","name":"Ryokun / Ryokan (Green Cloud)","category":"Green Tea","price":14.0,"isAlcoholic":false,"tastingNotes":["vegetal","tropical","tartness"],"menuIngredients":"Green Tea Cordial, Pineapple & Galangal Juice, Coconut Water, Matcha Foam","prepInstructions":"80ml Premix, Rocks Glass, Ice Block, Dehydrated wheel."},{"id":"umebiki","name":"Umebiki (Sake Draw)","category":"Ume","price":17.0,"isAlcoholic":true,"tastingNotes":["stone fruit","fresh","fizzy"],"menuIngredients":"Akashi Tai Sake Umeshu, Italicus, Plum & Shiso Reduction, Sparkling Wine, Plum Bitters, Plum Air Foam","prepInstructions":"Build, 60ml Premix, Top Up Prosecco 90ml, Wine Glass/Ice Ball, Plum Foam, Plum Jelly."},{"id":"umeshu_shines","name":"Umeshu Shines (Umeshu's Star)","category":"Ume","price":18.0,"isAlcoholic":true,"tastingNotes":["candied plum","light smoke","astringent"],"menuIngredients":"Matsui Umeshu, Honey & Sudachi Sour Mix, Laphroaig, Old-Fashioned Bitters","prepInstructions":"80ml premix, rocks glass, ice block, lemon zest."},{"id":"hishio","name":"Hishio (Fermented Sauces)","category":"Soy","price":18.0,"isAlcoholic":true,"tastingNotes":["bitter-sweet","umami","light citrus"],"menuIngredients":"Bombay Sapphire, Etsu Double Orange, Mancino Rosso & Chinato Vermouth, Campari, Homemade Ponzu","prepInstructions":"Build, 100 premix, Rocks Glass / Block ice, Orange jelly, Sesame spray."},{"id":"mame_mary","name":"Mame-Mary","category":"Soy","price":17.5,"isAlcoholic":true,"tastingNotes":["umami","silky","fizzy"],"menuIngredients":"Grey Goose Vodka Infused Kaffir Lime, La Tomato Japanese Liq, Edamame & Coconut Syrup, Rice Vinegar & Tonkatsu Sauce, Tomato Soda","prepInstructions":"No specific prep label available on bar station."}],"classic_cocktails":[{"id":"clase_azul_mar","name":"Clase Azul Mar","prepInstructions":"65ml premix, martini glass, half salt."},{"id":"rum_highball","name":"Rum Highball","prepInstructions":"70ml premix, ice Column, top up soda, lemon zest."},{"id":"lychee_martini","name":"Lychee Martini","prepInstructions":"Shaken. 50ml vodka, 20ml lychee liq, 10ml lemon juice, 10ml sugar syrup. Optional: Lychee skewers."},{"id":"mimosa","name":"Mimosa","prepInstructions":"75ml Orange Juice, 75ml Prosecco, Champagne glass/flute. Optional: orange twist garnish."},{"id":"margarita","name":"Margarita","prepInstructions":"40ml tequila, 20ml cointreau, 20ml lime juice. Shaken / Rocks Glass, Block Ice."},{"id":"old_fashioned","name":"Old Fashioned","prepInstructions":"80ml premix, rocks glass, ice block, Orange zest."},{"id":"martini","name":"Martini","prepInstructions":"Shaken or stirred. 60ml gin or vodka, 5ml or 1 dash vermouth. Dilute till perfection! Garnish with olive if dirty, lemon if not. Add 5ml brine if dirty for flavour."},{"id":"moscow_mule","name":"Moscow Mule","prepInstructions":"50ml Vodka, 20ml lime juice, Top Ginger beer, 2 dash angostura bitters. Rocks with Mint Sprig garnish."},{"id":"daiquiri","name":"Daiquiri","prepInstructions":"Shaken. 50ml White Rum, 20ml Lime juice, 15 sugar syrup. Coupe glass, dehydrated wheel."},{"id":"negroni","name":"Negroni","prepInstructions":"Stirred in Mixing glass. 25ml Gin, 25ml campari, 25ml sweet vermouth. Rocks Glass, Orange slice."},{"id":"espresso_martini","name":"Espresso Martini","prepInstructions":"Shaken. 50ml vodka, 15 kahlua, 10ml sugar, 50ml fresh brewed coffee. Coupe glass, 3 espresso beans."}]};
+
+const state = {
+  deck: 'menu',          // 'menu' | 'classic'
+  category: 'All',
+  index: 0,
+  shuffled: false,
+  order: [],             // array of indices into the active source list
+};
+
+const $ = sel => document.querySelector(sel);
+const card = $('#card');
+
+// counts
+$('#cMenu').textContent = '· '+DB.menu_cocktails.length;
+$('#cClassic').textContent = '· '+DB.classic_cocktails.length;
+
+// date
+const d = new Date();
+$('#dateStamp').textContent = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
+
+// build category list
+function buildCategories(){
+  const wrap = $('#cats');
+  wrap.innerHTML = '';
+  if(state.deck === 'classic'){ wrap.style.display='none'; return; }
+  wrap.style.display='flex';
+  const cats = ['All', ...Array.from(new Set(DB.menu_cocktails.map(c=>c.category)))];
+  cats.forEach(c=>{
+    const b = document.createElement('button');
+    b.className = 'cat'+(c===state.category?' active':'');
+    b.textContent = c;
+    b.addEventListener('click',()=>{
+      state.category = c;
+      buildOrder();
+      state.index = 0;
+      renderCats();
+      render();
+    });
+    wrap.appendChild(b);
+  });
+}
+function renderCats(){
+  document.querySelectorAll('.cat').forEach(el=>{
+    el.classList.toggle('active', el.textContent===state.category);
+  });
+}
+
+// active source
+function source(){
+  if(state.deck==='classic') return DB.classic_cocktails;
+  return state.category==='All'
+    ? DB.menu_cocktails
+    : DB.menu_cocktails.filter(c=>c.category===state.category);
+}
+
+function buildOrder(){
+  const list = source();
+  state.order = list.map((_,i)=>i);
+  if(state.shuffled) shuffleArr(state.order);
+}
+
+function shuffleArr(a){
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+}
+
+function current(){
+  const list = source();
+  if(list.length===0) return null;
+  const i = state.order[state.index] ?? 0;
+  return list[i];
+}
+
+function render(){
+  // unflip when navigating
+  card.classList.remove('flipped');
+
+  const item = current();
+  const list = source();
+  const total = list.length;
+
+  // progress
+  const pct = total ? ((state.index+1)/total)*100 : 0;
+  $('#fill').style.width = pct+'%';
+  const label = total ? String(state.index+1).padStart(2,'0')+' / '+String(total).padStart(2,'0') : '00 / 00';
+  $('#progress').textContent = label;
+  $('#progress').classList.toggle('over', pct>50);
+
+  if(!item){
+    $('#frontName').innerHTML = '<i>nothing here</i>';
+    $('#frontCat').textContent = '—';
+    $('#frontNotes').innerHTML = '';
+    $('#frontPrice').textContent = '';
+    $('#backName').textContent = '—';
+    $('#backIng').textContent = '—';
+    $('#backPrep').textContent = '—';
+    $('#backId').textContent = '—';
+    return;
+  }
+
+  if(state.deck==='menu'){
+    $('#classicBadge').style.display='none';
+    $('#frontCat').textContent = item.category + (item.isAlcoholic ? '' : ' · 0%');
+    // split bilingual name e.g. "Hanagasum (Blossom Mist)"
+    const m = item.name.match(/^(.+?)\s*\((.+)\)\s*$/);
+    if(m){
+      $('#frontName').innerHTML = m[1] + '<b>'+m[2]+'</b>';
+    } else {
+      $('#frontName').innerHTML = '<b>'+item.name+'</b>';
+    }
+    $('#frontNotes').innerHTML = (item.tastingNotes||[]).map(n=>`<span class="note">${n}</span>`).join('');
+    $('#frontPrice').innerHTML = '£<b>'+item.price.toFixed(2)+'</b>';
+
+    $('#secIng').style.display='block';
+    $('#backHeadL').textContent = 'Spec';
+    $('#backHeadR').textContent = item.category.toUpperCase();
+    $('#backName').textContent = item.name;
+    $('#backIng').textContent = item.menuIngredients;
+    $('#backPrep').textContent = item.prepInstructions;
+    $('#backId').textContent = '#'+item.id;
+  } else {
+    $('#classicBadge').style.display='block';
+    $('#frontCat').textContent = 'Classic';
+    $('#frontName').innerHTML = '<b>'+item.name+'</b>';
+    $('#frontNotes').innerHTML = '';
+    $('#frontPrice').textContent = '';
+
+    $('#secIng').style.display='none';
+    $('#backHeadL').textContent = 'Classic';
+    $('#backHeadR').textContent = 'BAR STD.';
+    $('#backName').textContent = item.name;
+    $('#backPrep').textContent = item.prepInstructions;
+    $('#backId').textContent = '#'+item.id;
+  }
+}
+
+// flip
+card.addEventListener('click',()=>card.classList.toggle('flipped'));
+
+// nav
+function next(){
+  const total = source().length;
+  if(!total) return;
+  state.index = (state.index+1) % total;
+  render();
+}
+function prev(){
+  const total = source().length;
+  if(!total) return;
+  state.index = (state.index-1+total) % total;
+  render();
+}
+$('#next').addEventListener('click',e=>{e.stopPropagation();next();});
+$('#prev').addEventListener('click',e=>{e.stopPropagation();prev();});
+
+// tabs
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    state.deck = t.dataset.deck;
+    state.category = 'All';
+    state.index = 0;
+    buildCategories();
+    buildOrder();
+    render();
+  });
+});
+
+// shuffle / reset
+$('#shuffle').addEventListener('click',()=>{
+  state.shuffled = true;
+  buildOrder();
+  state.index = 0;
+  render();
+});
+$('#reset').addEventListener('click',()=>{
+  state.shuffled = false;
+  buildOrder();
+  state.index = 0;
+  render();
+});
+
+// keyboard
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight') next();
+  else if(e.key==='ArrowLeft') prev();
+  else if(e.key===' '||e.key==='Enter'){ e.preventDefault(); card.classList.toggle('flipped'); }
+});
+
+// touch swipe
+let touchX=null, touchY=null;
+card.addEventListener('touchstart',e=>{
+  const t = e.touches[0]; touchX=t.clientX; touchY=t.clientY;
+},{passive:true});
+card.addEventListener('touchend',e=>{
+  if(touchX===null) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX-touchX, dy = t.clientY-touchY;
+  if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)){
+    // swipe — don't trigger flip
+    e.preventDefault();
+    if(dx<0) next(); else prev();
+    // suppress the upcoming click
+    suppressClick = true;
+    setTimeout(()=>suppressClick=false, 350);
+  }
+  touchX=touchY=null;
+});
+let suppressClick = false;
+card.addEventListener('click',e=>{
+  if(suppressClick){ e.stopPropagation(); }
+},true);
+
+// init
+buildCategories();
+buildOrder();
+render();
+
+// register service worker for offline / installability
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => {
+      console.log('SW registration skipped:', err.message);
+    });
+  });
+}
+</script>
+</body>
+</html>

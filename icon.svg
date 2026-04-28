@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#f1ebe0"/>
+  <rect x="48" y="48" width="416" height="416" fill="none" stroke="#1a1714" stroke-width="6"/>
+  <rect x="96" y="96" width="320" height="320" fill="#c8385a"/>
+  <text x="256" y="328" text-anchor="middle"
+        font-family="'Shippori Mincho', 'Hiragino Mincho ProN', 'Yu Mincho', serif"
+        font-weight="800" font-size="220" fill="#f1ebe0">桜</text>
+  <text x="256" y="448" text-anchor="middle"
+        font-family="'JetBrains Mono', monospace"
+        font-size="22" letter-spacing="6" fill="#1a1714">FLASHCARDS</text>
+</svg>
