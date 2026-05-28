@@ -29,7 +29,7 @@ Clase Azul Mar · Rum Highball · Lychee Martini · Mimosa · Margarita · Old F
 
 - **Three-venue toggle** at the top — switch between Kiyori, Aki, and Classics
 - **Category pills** within each venue (Signature / Aperitif / Premium for Kiyori; botanical categories for Aki)
-- **Tap to flip** — spec on front, full build / narrative on back
+- **Tap to reveal** — identity on front, full build / spec revealed in place
 - **Shuffle** for randomised practice
 - **Swipe left/right** on mobile, arrow keys on desktop, spacebar to flip
 - **N/A badge** on non-alcoholic serves
